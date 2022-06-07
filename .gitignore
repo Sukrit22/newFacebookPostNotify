@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+edgedriver_win64
 build/
 develop-eggs/
 dist/
