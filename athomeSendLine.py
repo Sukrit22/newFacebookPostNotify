@@ -151,7 +151,7 @@ if indexFound < 0:  # not found so we send all
 else:  # found at position so we send until that position
     index = len(posts)-1
     for post in reversed(posts):
-        if index <= indexFound and index >= 0:
+        if index < indexFound and index >= 0:
             # send
             send_to_line(token, post)
         index -= 1
