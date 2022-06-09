@@ -122,7 +122,7 @@ f.close()
 indexFound = -1
 index = 0
 for post in posts:
-    if post == r['newestPost']:
+    if post[:60] == r['newestPost']:
         indexFound = index
     index += 1
 r['newestPost'] = posts[0][:60]
@@ -145,13 +145,13 @@ def send_to_line(token, facebookPost):
 
 if indexFound < 0:  # not found so we send all
     # send allposts
-    for post in posts:
+    for post in reversed(posts):
         # send
         send_to_line(token, post)
 else:  # found at position so we send until that position
-    index = 0
-    for post in posts:
-        if index < indexFound:
+    index = len(posts)-1
+    for post in reversed(posts):
+        if index <= indexFound:
             # send
             send_to_line(token, post)
-        index += 1
+        index -= 1
