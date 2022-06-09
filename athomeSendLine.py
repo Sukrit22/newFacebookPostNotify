@@ -1,6 +1,7 @@
 
 '''Scraping Section'''
 
+import os
 import json
 import time
 from bs4 import BeautifulSoup as soup
@@ -14,16 +15,22 @@ from songline import Sendline
 options = webdriver.EdgeOptions()
 options.use_chromium = True
 options.add_argument('headless')
+options.add_argument("window-size=1920,1080")
 # driverPath = r"./edgedriver_win64/msedgedriver.exe"
 driver = webdriver.Edge(service=Service(
     EdgeChromiumDriverManager().install()), options=options)
+
+f = open('linetoken.txt', 'r')
+token = f.read()
+f.close()
 
 
 def getFacebookPost(page_name):
 
     url = "https://www.facebook.com/{}".format(page_name)
     driver.get(url)
-
+    time.sleep(5)
+    driver.execute_script("window.scrollTo(0, 1000)")  # to load more posts
     time.sleep(5)
 
     page_html = driver.page_source
@@ -49,8 +56,11 @@ def getFacebookPost(page_name):
     posts = data.find_all(
         'div', {'class': 'kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q'})
 
+    # print('before :\n'+str(posts))
     posts.pop(0)
+    # print('after :\n'+str(posts))
     sss = []
+    postsData = []
     # onlyString = []
     for post in posts:
         line = post.find_all('div', {'dir': 'auto'})
@@ -66,18 +76,23 @@ def getFacebookPost(page_name):
                     # onlyString.append(inl.string)
                 # print(type(inl), end='\n---\n')
             # print(l, end='\n---\n')
-    mypost = ' '.join(sss)
+        mypost = ' '.join(sss)
+        sss = []
+        print('mypost :\n'+mypost)
+        postsData.append(mypost)
+        mypost = ''
+
     # onlyString = ' '.join(onlyString)
     # print(sss)
     # return [mypost, onlyString]
-    return mypost
+    return postsData
     # print(posts)
     # allposts = []
     # for p in posts:
     #    print(p, end='\n\n')
 
 
-post = getFacebookPost('AT-Home-Study-Travel-Team-143632995663399/')
+posts = getFacebookPost('AT-Home-Study-Travel-Team-143632995663399/')
 
 # post = myArr[0]
 # myTxt = myArr[1]
@@ -98,24 +113,26 @@ try:
     f = open('newpost.txt', 'r', encoding='utf-16')
 except:
     f = open('newpost.txt', 'w', encoding='utf-16')
-    f.write('')
+    f.write(json.dumps({'newestPost': ''}))
     f.close()
     f = open('newpost.txt', 'r', encoding='utf-16')
 
-r = f.read()
+r = json.loads(f.read())
 f.close()
-noti = False
-if r == post:
-    pass
-else:
-    # send line
-    noti = True
-    import os
-    if os.path.exists("newpost.txt"):
-        os.remove('newpost.txt')
-    f = open('newpost.txt', 'w', encoding='utf-16')
-    f.write(post)
-    f.close()
+indexFound = -1
+index = 0
+for post in posts:
+    if post == r['newestPost']:
+        indexFound = index
+    index += 1
+r['newestPost'] = posts[0][:60]
+
+if os.path.exists("newpost.txt"):
+    os.remove('newpost.txt')
+f = open('newpost.txt', 'w', encoding='utf-16')
+f.write(json.dumps(r))
+f.close()
+# r['others'] = posts[1:]
 
 '''Send Line Section'''
 
@@ -126,8 +143,15 @@ def send_to_line(token, facebookPost):
     lineBot.sticker(180, 3)
 
 
-f = open('linetoken.txt', 'r')
-token = f.read()
-f.close()
-if noti:
-    send_to_line(token, post)
+if indexFound < 0:  # not found so we send all
+    # send allposts
+    for post in posts:
+        # send
+        send_to_line(token, post)
+else:  # found at position so we send until that position
+    index = 0
+    for post in posts:
+        if index < indexFound:
+            # send
+            send_to_line(token, post)
+        index += 1
