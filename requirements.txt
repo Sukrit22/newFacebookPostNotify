@@ -1,0 +1,4 @@
+selenium==4.2.0
+beautifulsoup4==4.11.1
+webdriver-manager==3.7.0
+songline==0.0.1
